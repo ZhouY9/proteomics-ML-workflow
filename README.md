@@ -57,7 +57,7 @@ machine learning, cloud-based workflow, classification and regression, proteomic
   - `LGBM` (LightGBM)
   - `MLPVAE` (Multilayer Perceptron inside Variational Autoencoder)
   
-- **Regression** : This step applies the machine learning models to the standardized data and generates a confusion matrix, ROC plots for all classes and averages, and other relevant evaluation metrics (Accuracy, F1, sensitivity, specificity) for all the models. The available algorithms are as follows:
+- **Regression** : This step applies the machine learning models to the standardized data and generates regression-specific evaluation metrics for all the models. The available algorithms are as follows:
   - `RF_REG` (Random Forest Regression)
   - `NN_REG` (Neural Network Regression)
   - `SVM_REG` (Support Vector Regression)
@@ -88,63 +88,82 @@ machine learning, cloud-based workflow, classification and regression, proteomic
 ### Requirements
 
 - **Docker**
-  - Please checkout the [Docker installation](https://docs.docker.com/get-docker/) guide.
+  - Please refer to the [Docker installation](https://docs.docker.com/get-docker/) guide.
 
 - **Mamba package manager**
-  - Please checkout the [mamba or micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) official installation guide.
+  - Please refer to the [mamba or micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) official installation guide.
   - We prefer `mamba` over [`conda`](https://docs.conda.io/en/latest/) since it is faster and uses `libsolv` to effectively resolve the dependencies.
 
-### Steps
+## Quick Start
 
-1. **Create a new environment with Cromwell**
+### 1. Clone the repository
 
-   Using `mamba` (recommended):
+```bash
+git clone https://github.com/anand-imcm/proteomics-ML-workflow.git && cd proteomics-ML-workflow
+```
 
-   ```bash
-   mamba create --name biomarkerml bioconda::cromwell
-   ```
+### 2. Create and activate a new environment
 
-   Or, using `conda`:
+Ensure that either `mamba` or `conda` is installed before proceeding.
 
-   ```bash
-   conda create --name biomarkerml -c bioconda cromwell
-   ```
+Using `mamba` (recommended):
 
-2. **Activate the environment**
+```bash
+mamba create --name biomarkerml bioconda::cromwell
+```
 
-   With `mamba`:
+```bash
+mamba activate biomarkerml
+```
+   
+Or, using `conda`:
 
-   ```bash
-   mamba activate biomarkerml
-   ```
+```bash
+conda create --name biomarkerml -c bioconda cromwell
+```
 
-   Or, with `conda`:
+```bash
+conda activate biomarkerml
+```
 
-   ```bash
-   conda activate biomarkerml
-   ```
+### 3. Configure the inputs (Binary classification dataset)
 
-3. **Prepare your input file**
+Open `Case_Dataset/input_Binary_Classification_Dataset.json` and update the `main.input_csv` field to the absolute path of the CSV file on your machine:
 
-   - All workflow inputs must be specified in a JSON file.
-   - Use the provided `example/inputs.json` file as a template. You can find this file in the `example/` directory of the repository.
-   - Make a copy of `example/inputs.json` and edit it to specify your own input data file and desired output prefix. At a minimum, update these two fields:
+```json
+"main.input_csv": "/absolute/path/to/proteomics-ML-workflow/Case_Dataset/Binary_Classification_Dataset.csv"
+```
 
-      ```json
-        "main.input_csv": "/full/path/to/your/input/data.csv",
-        "main.output_prefix": "your_output_prefix"
-        ```
+### 4. Run the workflow locally (Binary classification dataset)
 
-   - Replace `/full/path/to/your/input/data.csv` with the absolute path to your CSV data file, and set `your_output_prefix` to a name you want for your analysis outputs.
-   - You can adjust other parameters in the JSON file as needed. See the **Inputs** section below for descriptions of all available options.
+```bash
+cromwell run workflows/main.wdl -i Case_Dataset/input_Binary_Classification_Dataset.json
+```
 
-4. **Run the workflow locally**
+### 5. Use your own data
 
-   ```bash
-   cromwell run workflows/main.wdl -i example/inputs.json
-   ```
+To run the workflow on your own dataset, use the `example/inputs.json` file as a starting template. See the Workflow Inputs section for a full description of all the available parameters.
 
-## Inputs
+Make a copy of `example/inputs.json` and edit it to specify your own input data file and adjust any other parameters as needed:
+
+```bash
+cp example/inputs.json user_data_inputs.json
+```
+
+At minimum, update these two fields in `user_data_inputs.json`:
+
+```json
+"main.input_csv": "/absolute/path/to/your/data.csv",
+"main.output_prefix": "your_analysis_name"
+```
+
+Run the workflow on your own data:
+
+```bash
+cromwell run workflows/main.wdl -i user_data_inputs.json
+```
+
+## Workflow Inputs
 
 - **`main.input_csv`** : [File] Input file in `.csv` format, includes a `Label` column, with each row representing a sample and each column representing a feature. An example of the `.csv` is shown below:
 
@@ -162,7 +181,7 @@ machine learning, cloud-based workflow, classification and regression, proteomic
 > [!WARNING]
 > It is recommended to select only one dimensionality reduction method when using it alongside classification or regression models.
 >
-> If multiple dimensionality reduction methods are specified, the workflow will only perform the dimentinality reduction and generate a report.
+> If multiple dimensionality reduction methods are specified, the workflow will only perform the dimensionality reduction and generate a report.
 
 - **`main.num_of_dimensions`**: [Int] Total number of expected dimensions after applying dimensionality reduction for the visualization. This option only works when multiple `dimensionality_reduction_choices` are selected. Default value: `3`.
 
@@ -170,7 +189,7 @@ machine learning, cloud-based workflow, classification and regression, proteomic
 
 - **`main.regression_model_choices`** : [String] Specify the regression model name(s) to use. Options include `RF_reg`, `NN_reg`, `SVM_reg`, `XGB_reg`, `PLS_reg`, `KNN_reg`, `LGBM_reg`, `VAE_reg` and `MLPVAE_reg`. Multiple model names can be entered together, separated by a space. Default value: `RF_reg`
 
-- **`main.calculate_shap`**: [Boolean] Top features to display on the radar/bar chart. Default value: `false`
+- **`main.calculate_shap`**: [Boolean] Enable SHAP analysis for feature importance. Default value: `false`
 
 - **`main.shap_features`**: [Int] Number of features to display on the radar/bar chart. Default value: `10`
 
@@ -206,7 +225,7 @@ machine learning, cloud-based workflow, classification and regression, proteomic
 >
 > - **UniProt IDs with no associated Entrez symbol**: These entries are removed from the dataset.
 
-## Outputs
+## Workflow Outputs
 
 - `report` : [File] A `.pdf` file containing the final reports, including the plots generated through the analyses.
 - `results` : [File] A `.gz` file containing the results and plots from all steps in the workflow.
